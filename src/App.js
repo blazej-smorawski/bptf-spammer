@@ -1,173 +1,106 @@
-import * as React from 'react';
-import { useState } from 'react';
-import Box from '@mui/joy/Box';
-import { CssVarsProvider, useColorScheme } from '@mui/joy/styles';
-import Sheet from '@mui/joy/Sheet';
-import Typography from '@mui/joy/Typography';
-import TextField from '@mui/joy/TextField';
-import Button from '@mui/joy/Button';
-import Link from '@mui/joy/Link';
+import React, { useState } from "react";
 
 export default function App() {
-  let [refreshActive, setRefreshActive] = useState(true);
-  let [steamid, setSteamId] = useState(76561198027916204);
-  let [token, setToken] = useState(' ');
-  let [timeout, setTimeoutValue] = useState(10);
-  let [count, setCount] = useState(100);
-
+  const [refreshActive, setRefreshActive] = useState(true);
+  const [steamid, setSteamId] = useState("76561198027916204");
+  const [token, setToken] = useState("");
+  const [timeout, setTimeoutValue] = useState(10);
+  const [count, setCount] = useState(100);
   const [logs, setLogs] = useState([]);
 
   function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  const SendRefreshRequest = async (steamid, token, timeout, count) => {
-    setRefreshActive(false)
-    let logsCopy = logs
+  const SendRefreshRequest = async () => {
+    setRefreshActive(false);
+    let logsCopy = [...logs];
     for (let i = 0; i < count; i++) {
-      await fetch(`https://backpack.tf/api/inventory/${steamid}/refresh?token=${token}`, {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-        },
-      })
-        .then(response => response.json().then(data => ({ status: response.status, body: data })))
-        .then(response => {
-          if (response.status == 200) {
-            logsCopy = [...logsCopy, { text: `Refresh request successful, next update in ${response.body.next_update - response.body.current_time}s`, color: "success" }]
-          } else {
-            logsCopy = [...logsCopy, { text: `Request failed, Error code: ${response.status}, Text: ${response.text}`, color: "danger" }]
+      try {
+        const response = await fetch(
+          `https://backpack.tf/api/inventory/${steamid}/refresh?token=${token}`,
+          {
+            method: "POST",
+            headers: {
+              Accept: "application/json",
+            },
           }
-          setLogs(logsCopy)
-        })
-
+        );
+        const data = await response.json();
+        if (response.ok) {
+          logsCopy.push({
+            text: `Refresh successful, next update in ${data.next_update - data.current_time}s`,
+            color: "text-green-500",
+          });
+        } else {
+          logsCopy.push({
+            text: `Request failed: ${response.status}, ${data.message}`,
+            color: "text-red-500",
+          });
+        }
+      } catch (error) {
+        logsCopy.push({ text: `Error: ${error.message}`, color: "text-red-500" });
+      }
+      setLogs([...logsCopy]);
       await sleep(timeout * 1000);
     }
-    setRefreshActive(true)
-  }
+    setRefreshActive(true);
+  };
 
   return (
-    <CssVarsProvider defaultMode="dark">
-      <main>
-        <Box
-          sx={{
-            bgcolor: 'background.body',
-            flexGrow: 1,
-            height: '100vh',
-            overflowX: 'hidden',
-            borderRadius: 'none',
-          }}
+    <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center p-4">
+      <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md">
+        <h1 className="text-2xl font-bold mb-4">Spammer</h1>
+        <input
+          type="text"
+          placeholder="SteamID"
+          value={steamid}
+          onChange={(e) => setSteamId(e.target.value)}
+          className="w-full p-2 mb-2 bg-gray-700 rounded"
+        />
+        <input
+          type="text"
+          placeholder="Token"
+          value={token}
+          onChange={(e) => setToken(e.target.value)}
+          className="w-full p-2 mb-2 bg-gray-700 rounded"
+        />
+        <input
+          type="number"
+          placeholder="Timeout (s)"
+          value={timeout}
+          onChange={(e) => setTimeoutValue(Number(e.target.value))}
+          className="w-full p-2 mb-2 bg-gray-700 rounded"
+        />
+        <input
+          type="number"
+          placeholder="Count"
+          value={count}
+          onChange={(e) => setCount(Number(e.target.value))}
+          className="w-full p-2 mb-4 bg-gray-700 rounded"
+        />
+        <button
+          onClick={SendRefreshRequest}
+          disabled={!refreshActive}
+          className={`w-full p-2 rounded ${refreshActive ? "bg-blue-500 hover:bg-blue-600" : "bg-gray-600"}`}
         >
-          <Box
-            sx={{
-              my: 0, // margin top & botom
-              mx: 4,
-              display: 'flex',
-              flexDirection: 'row',
-              gap: 1,
-            }}
-          >
-            <Sheet
-              sx={{
-                width: 300,
-                height: 'fit-content',
-                mx: 'auto', // margin left & right
-                my: 4, // margin top & botom
-                py: 3, // padding top & bottom
-                px: 2, // padding left & right
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 2,
-                borderRadius: 'sm',
-                boxShadow: 'sm',
-              }}
-              variant="soft"
-            >
-              <div>
-                <Typography level="h4" component="h1">
-                  <b>spammer</b>
-                </Typography>
-              </div>
-              <TextField
-                name="steamid"
-                type="text"
-                placeholder="76561198027916204"
-                label="steamid"
-                onChange={(text) => { setSteamId(text.target.value) }}
-              />
-              <TextField
-                name="token"
-                type="password"
-                placeholder=""
-                label="Token"
-                onChange={(text) => { setToken(text.target.value) }}
-              />
-              <TextField
-                name="timeout"
-                type="number"
-                placeholder="10"
-                label="Timeout"
-                onChange={(text) => { setTimeoutValue(text.target.value) }}
-              />
-              <TextField
-                name="count"
-                type="number"
-                placeholder="100"
-                label="Count"
-                onChange={(text) => { setCount(text.target.value) }}
-              />
-
-              <Button disabled={!refreshActive} loading={!refreshActive} onClick={() => { SendRefreshRequest(steamid, token, timeout, count) }} sx={{ mt: 1 /* margin top */ }}>Refresh</Button>
-            </Sheet>
-
-            <Sheet
-              sx={{
-                width: '100%',
-                height: 'fit-content',
-                mx: 'auto', // margin left & right
-                my: 4, // margin top & botom
-                py: 3, // padding top & bottom
-                px: 2, // padding left & right
-                display: 'flex',
-                flexDirection: 'column',
-                gap: .4,
-                borderRadius: 'sm',
-                boxShadow: 'sm',
-              }}
-              variant="outlined"
-            >
-              <div>
-                <Typography level="h4" component="h1">
-                  <b>logs</b>
-                </Typography>
-              </div>
-
-              {logs.map(log => {
-                return (
-                  <Sheet
-                    sx={{
-                      width: '100%',
-                      height: 'fit-content',
-                      mx: 'auto', // margin left & right
-                      px: '10px',
-                      borderRadius: 'sm',
-                      boxShadow: 'sm',
-                    }}
-                    variant="soft"
-                    color={log.color}
-                  >
-                    <div>
-                      <Typography>
-                        {log.text}
-                      </Typography>
-                    </div>
-                  </Sheet>)
-              })}
-              <Button disabled={!refreshActive} loading={!refreshActive} onClick={() => { setLogs([]) }} sx={{ width: 'fit-content', mt: 1 /* margin top */ }}>Clear logs</Button>
-            </Sheet>
-          </Box>
-        </Box>
-      </main>
-    </CssVarsProvider>
+          Refresh
+        </button>
+      </div>
+      <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md mt-4">
+        <h2 className="text-xl font-bold mb-4">Logs</h2>
+        <div className="h-40 overflow-y-auto border border-gray-700 p-2 rounded">
+          {logs.map((log, index) => (
+            <p key={index} className={log.color}>{log.text}</p>
+          ))}
+        </div>
+        <button
+          onClick={() => setLogs([])}
+          className="w-full mt-2 p-2 bg-red-500 hover:bg-red-600 rounded"
+        >
+          Clear Logs
+        </button>
+      </div>
+    </div>
   );
 }
