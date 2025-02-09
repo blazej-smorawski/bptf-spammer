@@ -2,11 +2,14 @@ import React, { useState } from "react";
 
 export default function App() {
   const [refreshActive, setRefreshActive] = useState(true);
+  const [isRunning, setIsRunning] = useState(false);
   const [steamid, setSteamId] = useState("76561198027916204");
   const [token, setToken] = useState("");
   const [timeout, setTimeoutValue] = useState(10);
   const [count, setCount] = useState(100);
   const [logs, setLogs] = useState([]);
+  const [sentRequests, setSentRequests] = useState(0);
+  const [nextUpdateTime, setNextUpdateTime] = useState(null);
 
   function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -14,6 +17,9 @@ export default function App() {
 
   const SendRefreshRequest = async () => {
     setRefreshActive(false);
+    setSentRequests(0);
+    setNextUpdateTime(null);
+
     let logsCopy = [...logs];
     for (let i = 0; i < count; i++) {
       try {
@@ -30,51 +36,55 @@ export default function App() {
         if (response.ok) {
           logsCopy.push({
             text: `Refresh successful, next update in ${data.next_update - data.current_time}s`,
-            color: "text-green-500",
+            color: "bg-green-700",
           });
+          setNextUpdateTime(data.next_update - data.current_time);
         } else {
           logsCopy.push({
             text: `Request failed: ${response.status}, ${data.message}`,
-            color: "text-red-500",
+            color: "bg-red-700",
           });
         }
+        setSentRequests(i + 1);
       } catch (error) {
-        logsCopy.push({ text: `Error: ${error.message}`, color: "text-red-500" });
+        logsCopy.push({ text: `Error: ${error.message}`, color: "bg-red-700" });
       }
       setLogs([...logsCopy]);
       await sleep(timeout * 1000);
     }
     setRefreshActive(true);
+    setIsRunning(false);
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center p-4">
+    <div className="min-h-screen bg-gray-900 text-white flex flex-col lg:flex-row items-start p-4 gap-6">
+      {/* Input Section */}
       <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md">
         <h1 className="text-2xl font-bold mb-4">Spammer</h1>
+        <label className="block mb-1">SteamID</label>
         <input
           type="text"
-          placeholder="SteamID"
           value={steamid}
           onChange={(e) => setSteamId(e.target.value)}
           className="w-full p-2 mb-2 bg-gray-700 rounded"
         />
+        <label className="block mb-1">Token</label>
         <input
-          type="text"
-          placeholder="Token"
+          type="password"
           value={token}
           onChange={(e) => setToken(e.target.value)}
           className="w-full p-2 mb-2 bg-gray-700 rounded"
         />
+        <label className="block mb-1">Timeout (s)</label>
         <input
           type="number"
-          placeholder="Timeout (s)"
           value={timeout}
           onChange={(e) => setTimeoutValue(Number(e.target.value))}
           className="w-full p-2 mb-2 bg-gray-700 rounded"
         />
+        <label className="block mb-1">Count</label>
         <input
           type="number"
-          placeholder="Count"
           value={count}
           onChange={(e) => setCount(Number(e.target.value))}
           className="w-full p-2 mb-4 bg-gray-700 rounded"
@@ -86,12 +96,24 @@ export default function App() {
         >
           Refresh
         </button>
+        <button
+          onClick={() => setIsRunning(false)}
+          className="w-full mt-2 p-2 bg-red-500 hover:bg-red-600 rounded"
+        >
+          Stop
+        </button>
       </div>
-      <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md mt-4">
-        <h2 className="text-xl font-bold mb-4">Logs</h2>
-        <div className="h-40 overflow-y-auto border border-gray-700 p-2 rounded">
+      {/* Logs Section */}
+      <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md lg:max-w-xl">
+        <h2 className="text-xl font-bold mb-4 flex justify-between">
+          <span>Logs</span>
+          <span className="text-sm text-gray-400">Sent: {sentRequests}/{count} | Next: {nextUpdateTime ? `${nextUpdateTime}s` : "-"}</span>
+        </h2>
+        <div className="h-60 overflow-y-auto space-y-2">
           {logs.map((log, index) => (
-            <p key={index} className={log.color}>{log.text}</p>
+            <div key={index} className={`p-3 rounded shadow ${log.color}`}>
+              <p>{log.text}</p>
+            </div>
           ))}
         </div>
         <button
