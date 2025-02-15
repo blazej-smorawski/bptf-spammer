@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 export default function App() {
   const [refreshActive, setRefreshActive] = useState(true);
@@ -9,7 +9,19 @@ export default function App() {
   const [count, setCount] = useState(100);
   const [logs, setLogs] = useState([]);
   const [sentRequests, setSentRequests] = useState(0);
-  const [nextUpdateTime, setNextUpdateTime] = useState(null);
+  const [nextUpdateTime, setNextUpdateTime] = useState(0);
+
+  useEffect(() => {
+    setTimeout(() => {
+      if (nextUpdateTime !== 0) {
+        if (nextUpdateTime - 0.01 < 0) {
+          setNextUpdateTime(0);
+        } else {
+          setNextUpdateTime(nextUpdateTime - 0.01);
+        }
+      }
+    }, 10)
+  }, [nextUpdateTime]);
 
   function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -18,7 +30,6 @@ export default function App() {
   const SendRefreshRequest = async () => {
     setRefreshActive(false);
     setSentRequests(0);
-    setNextUpdateTime(null);
 
     let logsCopy = [...logs];
     for (let i = 0; i < count; i++) {
@@ -38,13 +49,14 @@ export default function App() {
             text: `Refresh successful, next update in ${data.next_update - data.current_time}s`,
             color: "bg-green-700",
           });
-          setNextUpdateTime(data.next_update - data.current_time);
         } else {
           logsCopy.push({
             text: `Request failed: ${response.status}, ${data.message}`,
             color: "bg-red-700",
           });
         }
+
+        setNextUpdateTime(timeout);
         setSentRequests(i + 1);
       } catch (error) {
         logsCopy.push({ text: `Error: ${error.message}`, color: "bg-red-700" });
@@ -70,7 +82,7 @@ export default function App() {
         />
         <label className="block mb-1">Token</label>
         <input
-          type="password"
+          type="text"
           value={token}
           onChange={(e) => setToken(e.target.value)}
           className="w-full p-2 mb-2 bg-gray-700 rounded"
@@ -107,7 +119,11 @@ export default function App() {
       <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md lg:max-w-xl">
         <h2 className="text-xl font-bold mb-4 flex justify-between">
           <span>Logs</span>
-          <span className="text-sm text-gray-400">Sent: {sentRequests}/{count} | Next: {nextUpdateTime ? `${nextUpdateTime}s` : "-"}</span>
+          <span className="text-sm text-gray-400 font-mono w-[400px] inline-block text-right">
+            Sent: {sentRequests.toString().padStart(3, ' ')} / {count.toString().padStart(3, ' ')} |
+            Next: {nextUpdateTime ? nextUpdateTime.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).padStart(6, ' ') + 's' : "   -  "}
+          </span>
+
         </h2>
         <div className="h-60 overflow-y-auto space-y-2">
           {logs.map((log, index) => (
