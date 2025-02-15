@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 
 export default function App() {
   const [refreshActive, setRefreshActive] = useState(true);
@@ -11,7 +11,7 @@ export default function App() {
   const [sentRequests, setSentRequests] = useState(0);
   const [nextUpdateTime, setNextUpdateTime] = useState(0);
 
-  const SendRequest = async () => {
+  const SendRequest = useCallback(async () => {
     let logsCopy = [...logs];
     try {
       const response = await fetch(
@@ -29,7 +29,7 @@ export default function App() {
       logsCopy.push({ text: `Error: ${error.message}`, color: "bg-red-700" });
     }
     setLogs([...logsCopy]);
-  }
+  }, [logs, steamid, token]);
 
   const SendRefreshRequest = async () => {
     setRefreshActive(false);
@@ -42,7 +42,7 @@ export default function App() {
   };
 
   useEffect(() => {
-    setTimeout(async () => {
+    const timer = setTimeout(async () => {
       if (nextUpdateTime !== 0) {
         if(nextUpdateTime - 0.01 < 0) {
           await SendRequest();
@@ -62,7 +62,9 @@ export default function App() {
         }
       }
     }, 10);
-  }, [nextUpdateTime]);
+    
+    return () => clearTimeout(timer); // Cleanup function to prevent memory leaks
+  }, [nextUpdateTime, isRunning, count, timeout, sentRequests, SendRequest]);
 
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col lg:flex-row p-4 gap-4">
