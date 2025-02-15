@@ -1,10 +1,10 @@
 {
   "files": {
-    "main.css": "/static/css/main.0eb5e778.css",
-    "main.js": "/static/js/main.37ab3cb0.js",
-    "index.html": "/index.html",
-    "main.0eb5e778.css.map": "/static/css/main.0eb5e778.css.map",
-    "main.37ab3cb0.js.map": "/static/js/main.37ab3cb0.js.map"
+    "main.css": "/bptf-spammer/static/css/main.0eb5e778.css",
+    "main.js": "/bptf-spammer/static/js/main.37ab3cb0.js",
+    "index.html": "/bptf-spammer/index.html",
+    "main.0eb5e778.css.map": "/bptf-spammer/static/css/main.0eb5e778.css.map",
+    "main.37ab3cb0.js.map": "/bptf-spammer/static/js/main.37ab3cb0.js.map"
   },
   "entrypoints": [
     "static/css/main.0eb5e778.css",
